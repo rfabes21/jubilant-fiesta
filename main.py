@@ -33,7 +33,7 @@ cerebro.adddata(CustomPandasData(dataname=coinbase_data, name="Coinbase"))
 cerebro.adddata(CustomPandasData(dataname=bitstamp_data, name="Bitstamp"))
 
 # Set initial cash
-initial_cash = 100000
+initial_cash = 1000
 cerebro.broker.setcash(initial_cash)
 
 
@@ -47,12 +47,13 @@ transactions.to_csv('performance_report.csv')
 
 
 # Get the final value of the portfolio
+initial_cash = cerebro.broker.startingcash
 final_value = cerebro.broker.getvalue()
+profit_loss_percentage = ((final_value - initial_cash) / initial_cash) * 100
 
-profit_loss_perc = ((final_value - initial_cash) / initial_cash) * 100
-print(f"Initial Cash: {initial_cash}")
-print(f"Final Value: {final_value}")
-print(f"Profit/Loss Percentage: {profit_loss_perc}%")
+print("Initial Cash:", initial_cash)
+print("Final Value:", final_value)
+print("Profit/Loss Percentage:", profit_loss_percentage, "%")
 
 
 # Generate a detailed report of the backtest

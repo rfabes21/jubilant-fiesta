@@ -6,13 +6,15 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 
 class CryptoArbitrage(bt.Strategy):
     params = (
-        ('threshold', 0.01),
-        ('trade_fee', 0.001),
+        ("trade_fee", 0.0025),
+        ("threshold_multiplier", 3),
+        ("atr_period", 14),
+        ("risk_percentage", 0.5),  # Use 10% of available cash for each trade
     )
 
-
     def __init__(self):
-        self.target_token = [data for data in self.datas]
+        self.target_token = self.datas
+        self.atr = {data: bt.indicators.ATR(data, period=self.params.atr_period) for data in self.target_token}
         self.trades = 0
         self.wins = 0
         self.total_profit = 0
@@ -28,7 +30,7 @@ class CryptoArbitrage(bt.Strategy):
             if trade.pnl > 0:
                 self.wins += 1
             win_rate = self.wins / self.trades * 100
-            self.log(f'Trade: PnL: {trade.pnl:.2f}, Total Profit: {self.total_profit:.2f}, Win Rate: {win_rate:.2f}%')
+            logging.info(f'Trade: PnL: {trade.pnl:.2f}, Total Profit: {self.total_profit:.2f}, Win Rate: {win_rate:.2f}%')
 
     def next(self):
         for i, data1 in enumerate(self.target_token):
@@ -39,10 +41,17 @@ class CryptoArbitrage(bt.Strategy):
 
                     TTS = sell_price - buy_price
                     TAPV = (data1.close[0] * self.params.trade_fee) + (data2.close[0] * self.params.trade_fee)
+                    threshold = self.params.threshold_multiplier * max(self.atr[data1][0], self.atr[data2][0])
 
-                    if TTS >= TAPV + self.params.threshold:
-                        size = self.broker.getcash() / data1.close[0]
-                        self.buy(data=data1, size=size)
-                        self.sell(data=data2, size=size)
+                    if TTS >= TAPV + threshold:
+                        cash = self.broker.getcash()
+                        trade_cash = cash * self.params.risk_percentage
+                        size = trade_cash / data1.close[0]
+
+                        buy_limit_price = buy_price * (1 + self.params.trade_fee)
+                        sell_limit_price = sell_price * (1 - self.params.trade_fee)
+
+                        self.buy(data=data1, size=size, exectype=bt.Order.Limit, price=buy_limit_price)
+                        self.sell(data=data2, size=size, exectype=bt.Order.Limit, price=sell_limit_price)
                         logging.info(f"Buy signal on {data1._name}: {data1.datetime.datetime()}, Cash: {self.broker.getcash()}, Value: {self.broker.getvalue()}")
                         logging.info(f"Sell signal on {data2._name}: {data2.datetime.datetime()}, Cash: {self.broker.getcash()}, Value: {self.broker.getvalue()}")
