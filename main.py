@@ -6,7 +6,7 @@ from data.custom_pandas_data import CustomPandasData
 from strategies.crypto_arbitrage import CryptoArbitrage
 
 # Define the start date for historical data
-six_months_ago = (datetime.now() - timedelta(6 * 30)).strftime('%Y-%m-%dT%H:%M:%SZ')
+six_months_ago = (datetime.now() - timedelta(4 * 30)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 # Fetch historical data
 kraken_data = fetch_historical_data('kraken', 'BTC/USD', since=six_months_ago)

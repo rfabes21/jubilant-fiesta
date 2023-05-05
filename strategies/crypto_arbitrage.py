@@ -7,9 +7,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class CryptoArbitrage(bt.Strategy):
     params = (
         ("trade_fee", 0.0025),
-        ("threshold_multiplier", 3.5),
+        ("threshold_multiplier", 15),
         ("atr_period", 14),
-        ("risk_percentage", 0.01),  # Use 1% of available cash for each trade
+        ("risk_percentage", 0.05),  # Use 1% of available cash for each trade
+        ("slippage", 0.001),
+        ("liquidity_limit", 0.1),  # Limit the trade size to 10% of the volume
     )
 
     def __init__(self):
@@ -46,12 +48,18 @@ class CryptoArbitrage(bt.Strategy):
                     if TTS >= TAPV + threshold:
                         cash = self.broker.getcash()
                         trade_cash = cash * self.params.risk_percentage
-                        size = trade_cash / data1.close[0]
+                        size = min(trade_cash / data1.close[0], data1.volume[0] * self.params.liquidity_limit, data2.volume[0] * self.params.liquidity_limit)
 
-                        buy_limit_price = buy_price * (1 + self.params.trade_fee)
-                        sell_limit_price = sell_price * (1 - self.params.trade_fee)
+                        buy_limit_price = buy_price * (1 + self.params.trade_fee) * (1 + self.params.slippage)
+                        sell_limit_price = sell_price * (1 - self.params.trade_fee) * (1 - self.params.slippage)
 
                         self.buy(data=data1, size=size, exectype=bt.Order.Limit, price=buy_limit_price)
                         self.sell(data=data2, size=size, exectype=bt.Order.Limit, price=sell_limit_price)
                         logging.info(f"Buy signal on {data1._name}: {data1.datetime.datetime()}, Cash: {self.broker.getcash()}, Value: {self.broker.getvalue()}")
                         logging.info(f"Sell signal on {data2._name}: {data2.datetime.datetime()}, Cash: {self.broker.getcash()}, Value: {self.broker.getvalue()}")
+
+    def stop(self):
+        for data in self.target_token:
+            position = self.getposition(data)
+            if position:
+                self.close(data)
