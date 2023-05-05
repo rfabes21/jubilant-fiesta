@@ -33,7 +33,7 @@ cerebro.adddata(CustomPandasData(dataname=coinbase_data, name="Coinbase"))
 cerebro.adddata(CustomPandasData(dataname=bitstamp_data, name="Bitstamp"))
 
 # Set initial cash
-initial_cash = 1000
+initial_cash = 10000
 cerebro.broker.setcash(initial_cash)
 
 

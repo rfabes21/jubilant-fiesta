@@ -9,7 +9,7 @@ class CryptoArbitrage(bt.Strategy):
         ("trade_fee", 0.0025),
         ("threshold_multiplier", 3),
         ("atr_period", 14),
-        ("risk_percentage", 0.5),  # Use 10% of available cash for each trade
+        ("risk_percentage", 0.7),  # Use 10% of available cash for each trade
     )
 
     def __init__(self):
