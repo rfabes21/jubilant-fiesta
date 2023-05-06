@@ -18,19 +18,16 @@ bitstamp_data = fetch_historical_data('bitstamp', 'BTC/USD', since=six_months_ag
 cerebro = bt.Cerebro()
 
 # Add analyzers
-# cerebro.addanalyzer(bt.analyzers.TotalTrades, _name='total_trades')
-# cerebro.addanalyzer(bt.analyzers.Wins, _name='wins')
-# cerebro.addanalyzer(bt.analyzers.Losses, _name='losses')
-# cerebro.addanalyzer(bt.analyzers.FinalValue, _name='final_value')
 cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade_analyzer')
 cerebro.addstrategy(CryptoArbitrage)
 cerebro.addanalyzer(PyFolio, _name='pyfolio')
 
 
 # Add data feeds to cerebro
-cerebro.adddata(CustomPandasData(dataname=kraken_data, name="Kraken"))
-cerebro.adddata(CustomPandasData(dataname=coinbase_data, name="Coinbase"))
-cerebro.adddata(CustomPandasData(dataname=bitstamp_data, name="Bitstamp"))
+cerebro.adddata(CustomPandasData(dataname=kraken_data, name="Kraken", order_book_depth=kraken_data['order_book_depth'].values, datetime_col='timestamp'))
+cerebro.adddata(CustomPandasData(dataname=coinbase_data, name="Coinbase", order_book_depth=coinbase_data['order_book_depth'].values, datetime_col='timestamp'))
+cerebro.adddata(CustomPandasData(dataname=bitstamp_data, name="Bitstamp", order_book_depth=bitstamp_data['order_book_depth'].values, datetime_col='timestamp'))
+
 
 # Set initial cash
 initial_cash = 100000

@@ -3,15 +3,17 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 class CryptoArbitrage(bt.Strategy):
     params = (
         ("trade_fee", 0.0025),
         ("threshold_multiplier", 15),
         ("atr_period", 14),
-        ("risk_percentage", 0.05),  # Use 1% of available cash for each trade
-        ("slippage", 0.001),
-        ("liquidity_limit", 0.1),  # Limit the trade size to 10% of the volume
+        ("risk_percentage", 0.7),
+        ("slippage", 0.007),
+        ("order_book_depth", 5),  # Assuming order book depth is added to the data feed
+        ("historical_volatility", 30),  # Assuming historical volatility is added to the data feed
+        ("stop_loss", 0.03),
+        ("take_profit", 0.05),
     )
 
     def __init__(self):
@@ -41,6 +43,10 @@ class CryptoArbitrage(bt.Strategy):
                     buy_price = data1.close[0]
                     sell_price = data2.close[0]
 
+                    # Additional data points
+                    order_book_depth = data1.order_book_depth[0]  # Assuming order book depth is added to the data feed
+                    historical_volatility = data1.historical_volatility[0]  # Assuming historical volatility is added to the data feed
+
                     TTS = sell_price - buy_price
                     TAPV = (data1.close[0] * self.params.trade_fee) + (data2.close[0] * self.params.trade_fee)
                     threshold = self.params.threshold_multiplier * max(self.atr[data1][0], self.atr[data2][0])
@@ -48,18 +54,21 @@ class CryptoArbitrage(bt.Strategy):
                     if TTS >= TAPV + threshold:
                         cash = self.broker.getcash()
                         trade_cash = cash * self.params.risk_percentage
-                        size = min(trade_cash / data1.close[0], data1.volume[0] * self.params.liquidity_limit, data2.volume[0] * self.params.liquidity_limit)
+                        size = trade_cash / data1.close[0]
 
                         buy_limit_price = buy_price * (1 + self.params.trade_fee) * (1 + self.params.slippage)
                         sell_limit_price = sell_price * (1 - self.params.trade_fee) * (1 - self.params.slippage)
 
-                        self.buy(data=data1, size=size, exectype=bt.Order.Limit, price=buy_limit_price)
-                        self.sell(data=data2, size=size, exectype=bt.Order.Limit, price=sell_limit_price)
+                        # Add stop-limit orders
+                        stop_loss_price = buy_limit_price * (1 - self.params.stop_loss)
+                        take_profit_price = buy_limit_price * (1 + self.params.take_profit)
+
+                        buy_order = self.buy(data=data1, size=size, exectype=bt.OrderLimit, price=buy_limit_price)
+                        sell_order = self.sell(data=data2, size=size, exectype=bt.Order.Limit, price=sell_limit_price)
+
+                        # Stop-limit orders for buy and sell orders
+                        stop_loss_order = self.sell(data=data1, size=size, exectype=bt.Order.StopLimit, price=stop_loss_price, parent=buy_order)
+                        take_profit_order = self.sell(data=data1, size=size, exectype=bt.Order.Limit, price=take_profit_price, parent=buy_order)
+
                         logging.info(f"Buy signal on {data1._name}: {data1.datetime.datetime()}, Cash: {self.broker.getcash()}, Value: {self.broker.getvalue()}")
                         logging.info(f"Sell signal on {data2._name}: {data2.datetime.datetime()}, Cash: {self.broker.getcash()}, Value: {self.broker.getvalue()}")
-
-    def stop(self):
-        for data in self.target_token:
-            position = self.getposition(data)
-            if position:
-                self.close(data)
