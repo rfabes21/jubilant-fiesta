@@ -7,11 +7,11 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class CryptoArbitrage(bt.Strategy):
     params = (
         ("trade_fee", 0.0025),
-        ("threshold_multiplier", 15),
+        ("threshold_multiplier", 25),
         ("atr_period", 14),
-        ("risk_percentage", 0.05),  # Use 1% of available cash for each trade
+        ("risk_percentage", 0.1),
         ("slippage", 0.001),
-        ("liquidity_limit", 0.1),  # Limit the trade size to 10% of the volume
+        ("liquidity_limit", 0.3),
     )
 
     def __init__(self):

@@ -12,16 +12,13 @@ six_months_ago = (datetime.now() - timedelta(4 * 30)).strftime('%Y-%m-%dT%H:%M:%
 kraken_data = fetch_historical_data('kraken', 'BTC/USD', since=six_months_ago)
 coinbase_data = fetch_historical_data('coinbasepro', 'BTC/USD', since=six_months_ago)
 bitstamp_data = fetch_historical_data('bitstamp', 'BTC/USD', since=six_months_ago)
+# bitfinex_data = fetch_historical_data('bitfinex', 'BTC/USD', since=six_months_ago)
 
 
 # Create a cerebro instance
 cerebro = bt.Cerebro()
 
 # Add analyzers
-# cerebro.addanalyzer(bt.analyzers.TotalTrades, _name='total_trades')
-# cerebro.addanalyzer(bt.analyzers.Wins, _name='wins')
-# cerebro.addanalyzer(bt.analyzers.Losses, _name='losses')
-# cerebro.addanalyzer(bt.analyzers.FinalValue, _name='final_value')
 cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade_analyzer')
 cerebro.addstrategy(CryptoArbitrage)
 cerebro.addanalyzer(PyFolio, _name='pyfolio')
@@ -31,6 +28,7 @@ cerebro.addanalyzer(PyFolio, _name='pyfolio')
 cerebro.adddata(CustomPandasData(dataname=kraken_data, name="Kraken"))
 cerebro.adddata(CustomPandasData(dataname=coinbase_data, name="Coinbase"))
 cerebro.adddata(CustomPandasData(dataname=bitstamp_data, name="Bitstamp"))
+# cerebro.adddata(CustomPandasData(dataname=bitfinex_data, name="Bitfinex"))
 
 # Set initial cash
 initial_cash = 100000
